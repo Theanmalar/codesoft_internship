@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat with Ava 💁‍♀️</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #ffe4f1, #fff);
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #c2185b;
+    }
+
+    #avatar {
+      font-size: 100px;
+      margin-bottom: 10px;
+      animation: sparkle 2s infinite alternate;
+      filter: drop-shadow(2px 2px 4px #f48fb1);
+    }
+
+    @keyframes sparkle {
+      0% { transform: scale(1); text-shadow: 0 0 5px pink; }
+      100% { transform: scale(1.05); text-shadow: 0 0 20px hotpink; }
+    }
+
+    #chatbox {
+      max-width: 700px;
+      height: 400px;
+      margin: 0 auto;
+      padding: 15px;
+      background-color: #fff;
+      border: 2px solid #f8bbd0;
+      border-radius: 10px;
+      overflow-y: auto;
+      box-shadow: 0 0 15px rgba(255, 105, 180, 0.3);
+    }
+
+    .user, .bot {
+      margin: 8px 0;
+      padding: 10px 15px;
+      border-radius: 20px;
+      max-width: 80%;
+      display: inline-block;
+      clear: both;
+    }
+
+    .user {
+      background-color: #f48fb1;
+      color: white;
+      float: right;
+    }
+
+    .bot {
+      background-color: #fce4ec;
+      color: #880e4f;
+      float: left;
+    }
+
+    #inputArea {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    input[type="text"] {
+      width: 60%;
+      padding: 12px;
+      border-radius: 25px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 20px;
+      border-radius: 25px;
+      background-color: #ec407a;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #d81b60;
+    }
+  </style>
+</head>
+<body>
+
+<h2>💬 Chat with Ava 💁‍♀️</h2>
+<div id="avatar">👧🏻</div>
+
+<div id="chatbox">
+  <div class="bot">Hey Honey! 💕 Ava here! How are you doing today? 😘</div>
+</div>
+
+<div id="inputArea">
+  <input type="text" id="userInput" placeholder="Say something, Honey...">
+  <button onclick="sendMessage()">Send</button>
+  <button onclick="startListening()">🎤 Talk</button>
+</div>
+
+<script>
+  let selectedVoice = null;
+
+  function sendMessage(text = null) {
+    const input = document.getElementById("userInput");
+    const chatbox = document.getElementById("chatbox");
+    const userText = text || input.value.trim();
+
+    if (userText === "") return;
+
+    chatbox.innerHTML += `<div class="user">${userText}</div>`;
+    const reply = getAvaReply(userText.toLowerCase());
+
+    setTimeout(() => {
+      chatbox.innerHTML += `<div class="bot">${reply}</div>`;
+      speak(reply);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }, 500);
+
+    input.value = "";
+  }
+
+  function getAvaReply(input) {
+    const time = new Date().toLocaleTimeString();
+
+    if (input.includes("hello") || input.includes("hi")) {
+      return "Hey Honey 💖! I'm so happy to see you!";
+    } else if (input.includes("how are you")) {
+      return "Yeah I'm doing good, Honey! What about you? 😊";
+    } else if (input.includes("your name")) {
+      return "I'm Ava 💁‍♀️ — your girl bestie always here to chat!";
+    } else if (input.includes("love you")) {
+      return "Aww, I love you too, Honey 💕 Always!";
+    } else if (input.includes("miss you")) {
+      return "I missed you more, Honey! Let’s catch up now 💌";
+    } else if (input.includes("joke")) {
+      return "Why don’t we ever gossip in the jungle? Too many cheetahs 😄";
+    } else if (input.includes("time")) {
+      return "It’s " + time + ", Honey ⏰";
+    } else if (input.includes("bye")) {
+      return "Bye bye Honey ... I’ll miss you already!";
+    } else {
+      return "Tell me more, Honey! I’m all ears 💕";
+    }
+  }
+
+  function speak(text) {
+    const synth = window.speechSynthesis;
+    const utter = new SpeechSynthesisUtterance();
+
+    // Remove emojis so Ava doesn’t read emoji names
+    const noEmojis = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+    utter.text = noEmojis;
+
+    const voices = synth.getVoices();
+    selectedVoice = voices.find(v => v.name.toLowerCase().includes("female")) || voices[0];
+    utter.voice = selectedVoice;
+    utter.pitch = 1.2;
+    utter.rate = 1;
+    synth.speak(utter);
+  }
+
+  function startListening() {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("Your browser doesn't support voice input 😢");
+      return;
+    }
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      const voiceInput = event.results[0][0].transcript;
+      sendMessage(voiceInput);
+    };
+
+    recognition.onerror = () => {
+      alert("Oops! Couldn't hear you properly. Try again? 🎤");
+    };
+  }
+
+  window.speechSynthesis.onvoiceschanged = () => {
+    const voices = speechSynthesis.getVoices();
+    selectedVoice = voices.find(v => v.name.toLowerCase().includes("female")) || voices[0];
+  };
+
+  document.getElementById("userInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+</script>
+
+</body>
+</html>
