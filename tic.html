@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>✨ Tic-Tac-Toe Game Platform ✨</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+    :root {
+      --bg-main: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      --text: #fff;
+      --cell-bg: rgba(255, 255, 255, 0.1);
+      --cell-hover: rgba(255, 255, 255, 0.3);
+      --glow: #00ffe7;
+      --primary-btn: #ff6ec4;
+      --primary-btn-hover: #ffb86c;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: var(--bg-main);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 2.5rem;
+      text-shadow: 0 0 10px var(--glow);
+    }
+
+    .controls {
+      margin: 20px;
+      text-align: center;
+    }
+
+    .controls select,
+    .controls button {
+      padding: 12px 20px;
+      font-size: 1rem;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--primary-btn);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      transition: 0.3s ease;
+    }
+
+    .controls button:hover,
+    .controls select:hover {
+      background: var(--primary-btn-hover);
+      transform: scale(1.05);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 12px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      box-shadow: 0 0 20px var(--glow);
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 2.5em;
+      background: var(--cell-bg);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .cell:hover {
+      background: var(--cell-hover);
+      transform: scale(1.1);
+      box-shadow: 0 0 10px var(--glow);
+    }
+
+    .message {
+      margin-top: 15px;
+      font-size: 1.4rem;
+      color: #00ffe7;
+      text-shadow: 0 0 5px #00ffe7;
+      min-height: 30px;
+    }
+
+    .toggle-dark {
+      background: #333;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    audio {
+      display: none;
+    }
+
+    @media (max-width: 500px) {
+      .board {
+        transform: scale(0.9);
+      }
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎮 Tic-Tac-Toe Battle Arena</h1>
+
+  <div class="controls">
+    <select id="symbolSelect">
+      <option value="X">Play as ❌ (AI: ⭕)</option>
+      <option value="O">Play as ⭕ (AI: ❌)</option>
+    </select>
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="toggleDarkMode()" class="toggle-dark">🌙 Theme</button>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div class="message" id="message"></div>
+
+  <audio id="clickSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
+  <audio id="winSound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+
+<script>
+  const boardEl = document.getElementById("board");
+  const messageEl = document.getElementById("message");
+  const symbolSelect = document.getElementById("symbolSelect");
+  const clickSound = document.getElementById("clickSound");
+  const winSound = document.getElementById("winSound");
+
+  let board = Array(9).fill("");
+  let gameOver = false;
+  let human = "X", ai = "O";
+
+  const winPatterns = [
+    [0,1,2], [3,4,5], [6,7,8],
+    [0,3,6], [1,4,7], [2,5,8],
+    [0,4,8], [2,4,6]
+  ];
+
+  function toggleDarkMode() {
+    document.body.classList.toggle("dark");
+  }
+
+  function startGame() {
+    human = symbolSelect.value;
+    ai = human === "X" ? "O" : "X";
+    board = Array(9).fill("");
+    gameOver = false;
+    messageEl.textContent = "";
+    drawBoard();
+    if (ai === "X") aiMove();
+  }
+
+  function drawBoard() {
+    boardEl.innerHTML = "";
+    board.forEach((val, i) => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.index = i;
+      cell.textContent = val;
+      if (!val && !gameOver) {
+        cell.addEventListener("click", handleMove);
+      }
+      boardEl.appendChild(cell);
+    });
+  }
+
+  function handleMove(e) {
+    const index = e.target.dataset.index;
+    if (board[index] === "" && !gameOver) {
+      board[index] = human;
+      clickSound.play();
+      drawBoard();
+      if (checkWin(human)) return endGame("You win! 🎉");
+      if (isDraw()) return endGame("It's a draw.");
+      setTimeout(aiMove, 400);
+    }
+  }
+
+  function aiMove() {
+    const best = getBestMove(board, ai, -Infinity, Infinity);
+    if (best.index !== -1) {
+      board[best.index] = ai;
+      clickSound.play();
+      drawBoard();
+      if (checkWin(ai)) return endGame("AI wins! 🤖");
+      if (isDraw()) return endGame("It's a draw.");
+    }
+  }
+
+  function getBestMove(brd, player, alpha, beta) {
+    if (checkWin(human, brd)) return { score: -1 };
+    if (checkWin(ai, brd)) return { score: 1 };
+    if (brd.every(cell => cell !== "")) return { score: 0 };
+
+    const moves = [];
+
+    for (let i = 0; i < brd.length; i++) {
+      if (brd[i] === "") {
+        brd[i] = player;
+        const result = getBestMove(brd, player === ai ? human : ai, alpha, beta);
+        brd[i] = "";
+        result.index = i;
+        moves.push(result);
+
+        if (player === ai) alpha = Math.max(alpha, result.score);
+        else beta = Math.min(beta, result.score);
+
+        if (beta <= alpha) break;
+      }
+    }
+
+    let bestMove = moves[0];
+    for (let move of moves) {
+      if (player === ai && move.score > bestMove.score) bestMove = move;
+      if (player === human && move.score < bestMove.score) bestMove = move;
+    }
+
+    return bestMove || { index: -1, score: 0 };
+  }
+
+  function checkWin(p, brd = board) {
+    return winPatterns.some(pattern => pattern.every(i => brd[i] === p));
+  }
+
+  function isDraw() {
+    return board.every(cell => cell !== "");
+  }
+
+  function endGame(msg) {
+    gameOver = true;
+    messageEl.textContent = msg;
+    winSound.play();
+  }
+
+  startGame(); // start first time
+</script>
+</body>
+</html>
